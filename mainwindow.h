@@ -45,6 +45,12 @@ private slots:
     void selectionArea();
 
 
+    void on_actionOval_triggered();
+
+    void on_actionRectangle_triggered();
+
+    void on_actionLine_triggered();
+
 protected:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
@@ -64,6 +70,10 @@ private:
     bool drawing;
     bool selecting;
     bool movingSelection;
+    bool drawingShape;
+
+    enum Shape { None, Line, Rectangle, Oval };
+    Shape currentShape;
 
     QPoint lastMousePos;
     QPoint selectionStart;
