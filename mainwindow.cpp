@@ -8,6 +8,8 @@ MainWindow::MainWindow(QWidget *parent)
     , myPenWidth(1)
     , modified(false)
     , drawing(false)
+    , selecting(false)
+    , movingSelection(false)
 {
     ui->setupUi(this);
     image = QImage(this->size(), QImage::Format_ARGB32);
@@ -25,7 +27,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->actionPen_Width, &QAction::triggered, this, &MainWindow::penWidths);
     connect(ui->actionPen_Color, &QAction::triggered, this, &MainWindow::penColors);
-
+    connect(ui->actionSelection, &QAction::triggered, this, &MainWindow::selectionArea);
 }
 
 MainWindow::~MainWindow()
@@ -71,7 +73,6 @@ void MainWindow::save()
     }
 }
 
-
 void MainWindow::saveAs()
 {
     QString fileName = QFileDialog::getSaveFileName(this, tr("Save File"), QDir::currentPath());
@@ -108,39 +109,64 @@ void MainWindow::penColors()
 
 void MainWindow::mousePressEvent(QMouseEvent *event)
 {
-    if (event->button() == Qt::LeftButton)
-    {
-        drawing = true;
-        lastMousePos = event->pos();
-        saveImageState();
+    if (event->button() == Qt::LeftButton) {
+        if (selecting) {
+            selectionStart = event->pos();
+            selectionEnd = selectionStart;
+        } else if (movingSelection && selectionRect.contains(event->pos())) {
+            selectionOffset = event->pos() - selectionRect.topLeft();
+        } else {
+            drawing = true;
+            lastMousePos = event->pos();
+            saveImageState();  // Save the state before starting to draw
+        }
     }
 }
 
 void MainWindow::mouseMoveEvent(QMouseEvent *event)
 {
-    if ((event->buttons() & Qt::LeftButton) && drawing)
-    {
-        QPainter painter(&image);
-        painter.setPen(QPen(myPenColor, myPenWidth, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-        painter.drawLine(lastMousePos, event->pos());
-        modified = true;
-        lastMousePos = event->pos();
+    if (drawing) {
+        if ((event->buttons() & Qt::LeftButton) && drawing) {
+            QPainter painter(&image);
+            painter.setPen(QPen(myPenColor, myPenWidth, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+            painter.drawLine(lastMousePos, event->pos());
+            modified = true;
+            lastMousePos = event->pos();
+            update();
+        }
+    } else if (movingSelection) {
+        selectionRect.moveTopLeft(event->pos() - selectionOffset);
+        update();
+    } else if (selecting) {
+        selectionEnd = event->pos();
+        selectionRect = QRect(selectionStart, selectionEnd).normalized();
         update();
     }
 }
 
 void MainWindow::mouseReleaseEvent(QMouseEvent *event)
 {
-    if (event->button() == Qt::LeftButton && drawing)
-    {
-        drawing = false;
+    if (event->button() == Qt::LeftButton) {
+        if (drawing) {
+            drawing = false;
+        } else if (movingSelection) {
+            QPainter painter(&image);
+            painter.drawImage(selectionRect.topLeft(), selectedImage);
+            movingSelection = false;
+            modified = true;
+            update();
+        } else if (selecting) {
+            selecting = false;
+            movingSelection = true;
+            selectedImage = image.copy(selectionRect);
+            clearSelectedArea();  // Clear the selected area from the original image
+        }
     }
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
-    if (event->key() == Qt::Key_Escape)
-    {
+    if (event->key() == Qt::Key_Escape) {
         close();
     }
 }
@@ -150,12 +176,15 @@ void MainWindow::paintEvent(QPaintEvent *event)
     QPainter painter(this);
     QRect rect = event->rect();
     painter.drawImage(rect, image, rect);
+
+    if (selecting || movingSelection) {
+        drawSelectionRect(painter);
+    }
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)
 {
-    if (width() > image.width() || height() > image.height())
-    {
+    if (width() > image.width() || height() > image.height()) {
         int newWidth = qMax(width() + 128, image.width());
         int newHeight = qMax(height() + 128, image.height());
         resizeImage(newWidth, newHeight);
@@ -179,8 +208,7 @@ void MainWindow::resizeImage(int newWidth, int newHeight)
 
 void MainWindow::saveImageState()
 {
-    if (!redoStack.isEmpty())
-    {
+    if (!redoStack.isEmpty()) {
         redoStack.clear();
     }
     undoStack.push(image);
@@ -188,8 +216,7 @@ void MainWindow::saveImageState()
 
 void MainWindow::undo()
 {
-    if (!undoStack.isEmpty())
-    {
+    if (!undoStack.isEmpty()) {
         redoStack.push(image);
         image = undoStack.pop();
         update();
@@ -198,12 +225,17 @@ void MainWindow::undo()
 
 void MainWindow::redo()
 {
-    if (!redoStack.isEmpty())
-    {
+    if (!redoStack.isEmpty()) {
         undoStack.push(image);
         image = redoStack.pop();
         update();
     }
+}
+
+void MainWindow::drawSelectionRect(QPainter &painter)
+{
+    painter.setPen(QPen(Qt::DashLine));
+    painter.drawRect(selectionRect);
 }
 
 void MainWindow::clear()
@@ -213,4 +245,16 @@ void MainWindow::clear()
     update();
 }
 
+void MainWindow::selectionArea()
+{
+    selecting = true;
+    movingSelection = false;
+}
+
+void MainWindow::clearSelectedArea()
+{
+    QPainter painter(&image);
+    painter.fillRect(selectionRect, Qt::white);
+    update();
+}
 

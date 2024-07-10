@@ -42,6 +42,7 @@ private slots:
     void undo();
     void redo();
     void clear();
+    void selectionArea();
 
 
 protected:
@@ -61,11 +62,20 @@ private:
 
     bool modified;
     bool drawing;
+    bool selecting;
+    bool movingSelection;
 
     QPoint lastMousePos;
+    QPoint selectionStart;
+    QPoint selectionEnd;
+    QRect selectionRect;
+    QImage selectedImage;
+    QPoint selectionOffset;
 
     void resizeImage(int newWidth, int newHeight);
     void saveImageState();
+    void drawSelectionRect(QPainter &painter);
+    void clearSelectedArea();
 
     QStack<QImage> undoStack;
     QStack<QImage> redoStack;
