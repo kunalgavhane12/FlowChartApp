@@ -53,7 +53,8 @@ void MainWindow::newfile()
 void MainWindow::open()
 {
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"), QDir::currentPath());
-    if (!fileName.isEmpty()) {
+    if (!fileName.isEmpty())
+    {
         image.load(fileName);
         modified = false;
         update();
@@ -63,7 +64,8 @@ void MainWindow::open()
 void MainWindow::save()
 {
     QString fileName = QFileDialog::getSaveFileName(this, tr("Save File"), QDir::currentPath());
-    if (!fileName.isEmpty()) {
+    if (!fileName.isEmpty())
+    {
         image.save(fileName);
         modified = false;
     }
@@ -73,7 +75,8 @@ void MainWindow::save()
 void MainWindow::saveAs()
 {
     QString fileName = QFileDialog::getSaveFileName(this, tr("Save File"), QDir::currentPath());
-    if (!fileName.isEmpty()) {
+    if (!fileName.isEmpty())
+    {
         image.save(fileName);
         modified = false;
     }
@@ -88,7 +91,8 @@ void MainWindow::penWidths()
 {
     bool ok;
     int newWidth = QInputDialog::getInt(this, tr("Pen Width"), tr("Select pen width:"), myPenWidth, 1, 50, 1, &ok);
-    if (ok) {
+    if (ok)
+    {
         setPenWidth(newWidth);
     }
 }
@@ -96,14 +100,16 @@ void MainWindow::penWidths()
 void MainWindow::penColors()
 {
     QColor newColor = QColorDialog::getColor(myPenColor, this);
-    if (newColor.isValid()) {
+    if (newColor.isValid())
+    {
         setPenColor(newColor);
     }
 }
 
 void MainWindow::mousePressEvent(QMouseEvent *event)
 {
-    if (event->button() == Qt::LeftButton) {
+    if (event->button() == Qt::LeftButton)
+    {
         drawing = true;
         lastMousePos = event->pos();
         saveImageState();
@@ -112,7 +118,8 @@ void MainWindow::mousePressEvent(QMouseEvent *event)
 
 void MainWindow::mouseMoveEvent(QMouseEvent *event)
 {
-    if ((event->buttons() & Qt::LeftButton) && drawing) {
+    if ((event->buttons() & Qt::LeftButton) && drawing)
+    {
         QPainter painter(&image);
         painter.setPen(QPen(myPenColor, myPenWidth, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
         painter.drawLine(lastMousePos, event->pos());
@@ -124,14 +131,16 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event)
 
 void MainWindow::mouseReleaseEvent(QMouseEvent *event)
 {
-    if (event->button() == Qt::LeftButton && drawing) {
+    if (event->button() == Qt::LeftButton && drawing)
+    {
         drawing = false;
     }
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
-    if (event->key() == Qt::Key_Escape) {
+    if (event->key() == Qt::Key_Escape)
+    {
         close();
     }
 }
@@ -145,7 +154,8 @@ void MainWindow::paintEvent(QPaintEvent *event)
 
 void MainWindow::resizeEvent(QResizeEvent *event)
 {
-    if (width() > image.width() || height() > image.height()) {
+    if (width() > image.width() || height() > image.height())
+    {
         int newWidth = qMax(width() + 128, image.width());
         int newHeight = qMax(height() + 128, image.height());
         resizeImage(newWidth, newHeight);
@@ -169,7 +179,8 @@ void MainWindow::resizeImage(int newWidth, int newHeight)
 
 void MainWindow::saveImageState()
 {
-    if (!redoStack.isEmpty()) {
+    if (!redoStack.isEmpty())
+    {
         redoStack.clear();
     }
     undoStack.push(image);
@@ -177,7 +188,8 @@ void MainWindow::saveImageState()
 
 void MainWindow::undo()
 {
-    if (!undoStack.isEmpty()) {
+    if (!undoStack.isEmpty())
+    {
         redoStack.push(image);
         image = undoStack.pop();
         update();
@@ -186,7 +198,8 @@ void MainWindow::undo()
 
 void MainWindow::redo()
 {
-    if (!redoStack.isEmpty()) {
+    if (!redoStack.isEmpty())
+    {
         undoStack.push(image);
         image = redoStack.pop();
         update();
